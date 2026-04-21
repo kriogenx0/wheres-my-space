@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct WheresItGoingApp: App {
+struct WheresMySpaceApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
