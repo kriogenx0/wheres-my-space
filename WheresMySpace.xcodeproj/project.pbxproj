@@ -13,6 +13,7 @@
 		AA0000000000000000000004 /* FileListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000014 /* FileListView.swift */; };
 		AA0000000000000000000005 /* StorageBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000015 /* StorageBarView.swift */; };
 		AA0000000000000000000006 /* FileItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000016 /* FileItem.swift */; };
+		AA0000000000000000000008 /* FolderItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000020 /* FolderItem.swift */; };
 		AA0000000000000000000007 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000017 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
@@ -24,6 +25,7 @@
 		AA0000000000000000000014 /* FileListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileListView.swift; sourceTree = "<group>"; };
 		AA0000000000000000000015 /* StorageBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageBarView.swift; sourceTree = "<group>"; };
 		AA0000000000000000000016 /* FileItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileItem.swift; sourceTree = "<group>"; };
+		AA0000000000000000000020 /* FolderItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FolderItem.swift; sourceTree = "<group>"; };
 		AA0000000000000000000017 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		AA0000000000000000000018 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AA0000000000000000000019 /* WheresMySpace.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = WheresMySpace.entitlements; sourceTree = "<group>"; };
@@ -49,6 +51,7 @@
 				AA0000000000000000000014 /* FileListView.swift */,
 				AA0000000000000000000015 /* StorageBarView.swift */,
 				AA0000000000000000000016 /* FileItem.swift */,
+				AA0000000000000000000020 /* FolderItem.swift */,
 				AA0000000000000000000017 /* Assets.xcassets */,
 				AA0000000000000000000018 /* Info.plist */,
 				AA0000000000000000000019 /* WheresMySpace.entitlements */,
@@ -162,6 +165,7 @@
 				AA0000000000000000000004 /* FileListView.swift in Sources */,
 				AA0000000000000000000005 /* StorageBarView.swift in Sources */,
 				AA0000000000000000000006 /* FileItem.swift in Sources */,
+				AA0000000000000000000008 /* FolderItem.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

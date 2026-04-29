@@ -20,9 +20,14 @@ struct ContentView: View {
                     HStack(spacing: 8) {
                         ProgressView()
                             .scaleEffect(0.8)
-                        Text(vm.scanningTarget.map { "Scanning \($0.label)…" } ?? "Scanning…")
+                        Text(vm.currentScanningFile.isEmpty
+                             ? "Scanning…"
+                             : URL(fileURLWithPath: vm.currentScanningFile).lastPathComponent)
                             .foregroundStyle(.secondary)
                             .font(.caption)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                            .frame(maxWidth: 220, alignment: .leading)
                     }
                 }
                 Button {

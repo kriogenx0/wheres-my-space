@@ -3,18 +3,16 @@ import SwiftUI
 struct FileListView: View {
     let target: ScanTarget
     @ObservedObject var vm: StorageViewModel
+    @State private var selection: Set<UUID> = []
 
-    private var items: [FileItem] {
-        vm.files[target] ?? []
-    }
-
-    private var largestSize: Int64 {
-        items.first?.size ?? 1
-    }
+    private var items: [FileItem] { vm.files[target] ?? [] }
+    private var folders: [FolderItem] { vm.folders[target] ?? [] }
+    private var largestFileSize: Int64 { items.first?.size ?? 1 }
+    private var largestFolderSize: Int64 { folders.first?.size ?? 1 }
 
     var body: some View {
         Group {
-            if vm.isScanning && (vm.files[target] == nil) {
+            if vm.isScanning && vm.files[target] == nil {
                 VStack(spacing: 12) {
                     ProgressView()
                         .scaleEffect(1.2)
@@ -22,7 +20,7 @@ struct FileListView: View {
                         .foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if items.isEmpty {
+            } else if items.isEmpty && folders.isEmpty {
                 VStack(spacing: 12) {
                     Image(systemName: "folder.badge.questionmark")
                         .font(.system(size: 40))
@@ -32,13 +30,103 @@ struct FileListView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                List(items) { item in
-                    FileRowView(item: item, largestSize: largestSize, accentColor: target.color)
-                        .listRowSeparator(.visible)
+                List(selection: $selection) {
+                    if !folders.isEmpty {
+                        Section("Folders") {
+                            ForEach(folders) { folder in
+                                FolderRowView(folder: folder, largestSize: largestFolderSize, accentColor: target.color)
+                                    .listRowSeparator(.visible)
+                                    .contextMenu {
+                                        Button("Reveal in Finder") {
+                                            NSWorkspace.shared.activateFileViewerSelecting([folder.url])
+                                        }
+                                    }
+                            }
+                        }
+                    }
+                    if !items.isEmpty {
+                        Section("Large Files") {
+                            ForEach(items) { item in
+                                FileRowView(item: item, largestSize: largestFileSize, accentColor: target.color)
+                                    .listRowSeparator(.visible)
+                                    .contextMenu {
+                                        Button("Reveal in Finder") {
+                                            NSWorkspace.shared.activateFileViewerSelecting([item.url])
+                                        }
+                                        Button("Copy Path") {
+                                            NSPasteboard.general.clearContents()
+                                            NSPasteboard.general.setString(item.path, forType: .string)
+                                        }
+                                        Divider()
+                                        Button("Move to Trash") {
+                                            let fileIds = Set(items.map(\.id))
+                                            let toDelete: Set<UUID> = selection.contains(item.id)
+                                                ? selection.intersection(fileIds)
+                                                : [item.id]
+                                            vm.moveToTrash(ids: toDelete, target: target)
+                                            selection.subtract(toDelete)
+                                        }
+                                    }
+                            }
+                        }
+                    }
                 }
                 .listStyle(.plain)
+                .onDeleteCommand {
+                    let fileIds = Set(items.map(\.id))
+                    let toDelete = selection.intersection(fileIds)
+                    guard !toDelete.isEmpty else { return }
+                    vm.moveToTrash(ids: toDelete, target: target)
+                    selection.subtract(toDelete)
+                }
             }
         }
+        .onChange(of: target) { _ in selection = [] }
+    }
+}
+
+struct FolderRowView: View {
+    let folder: FolderItem
+    let largestSize: Int64
+    let accentColor: Color
+
+    private var fraction: Double {
+        largestSize > 0 ? Double(folder.size) / Double(largestSize) : 0
+    }
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 10) {
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(accentColor.opacity(0.15))
+                        .frame(height: 4)
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(accentColor)
+                        .frame(width: geo.size.width * fraction, height: 4)
+                }
+                .frame(height: 4)
+            }
+            .frame(width: 80, height: 4)
+
+            Image(systemName: "folder.fill")
+                .foregroundStyle(accentColor)
+                .font(.system(size: 13))
+                .frame(width: 16)
+
+            Text(folder.name)
+                .font(.system(size: 13, weight: .medium))
+                .lineLimit(1)
+
+            Spacer()
+
+            Text(folder.formattedSize)
+                .font(.system(size: 13, design: .monospaced))
+                .foregroundStyle(.primary)
+                .frame(minWidth: 80, alignment: .trailing)
+        }
+        .padding(.vertical, 4)
+        .contentShape(Rectangle())
     }
 }
 
@@ -53,7 +141,6 @@ struct FileRowView: View {
 
     var body: some View {
         HStack(alignment: .center, spacing: 10) {
-            // Relative size bar
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     RoundedRectangle(cornerRadius: 2)
@@ -64,9 +151,13 @@ struct FileRowView: View {
                         .frame(width: geo.size.width * fraction, height: 4)
                 }
                 .frame(height: 4)
-                .frame(maxWidth: .infinity, alignment: .leading)
             }
             .frame(width: 80, height: 4)
+
+            Image(systemName: "doc.fill")
+                .foregroundStyle(.secondary)
+                .font(.system(size: 13))
+                .frame(width: 16)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(item.name)
@@ -88,14 +179,5 @@ struct FileRowView: View {
         }
         .padding(.vertical, 4)
         .contentShape(Rectangle())
-        .contextMenu {
-            Button("Reveal in Finder") {
-                NSWorkspace.shared.activateFileViewerSelecting([item.url])
-            }
-            Button("Copy Path") {
-                NSPasteboard.general.clearContents()
-                NSPasteboard.general.setString(item.path, forType: .string)
-            }
-        }
     }
 }
