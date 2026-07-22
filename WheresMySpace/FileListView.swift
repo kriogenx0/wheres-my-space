@@ -34,7 +34,12 @@ struct FileListView: View {
                     if !folders.isEmpty {
                         Section("Folders") {
                             ForEach(folders) { folder in
-                                FolderRowView(folder: folder, largestSize: largestFolderSize, accentColor: target.color)
+                                FolderRowView(
+                                    folder: folder,
+                                    largestSize: largestFolderSize,
+                                    accentColor: target.color,
+                                    onDelete: { vm.moveFolderToTrash(folder: folder, target: target) }
+                                )
                                     .listRowSeparator(.visible)
                                     .contextMenu {
                                         Button("Reveal in Finder") {
@@ -47,7 +52,15 @@ struct FileListView: View {
                     if !items.isEmpty {
                         Section("Large Files") {
                             ForEach(items) { item in
-                                FileRowView(item: item, largestSize: largestFileSize, accentColor: target.color)
+                                FileRowView(
+                                    item: item,
+                                    largestSize: largestFileSize,
+                                    accentColor: target.color,
+                                    onDelete: {
+                                        vm.moveToTrash(ids: [item.id], target: target)
+                                        selection.remove(item.id)
+                                    }
+                                )
                                     .listRowSeparator(.visible)
                                     .contextMenu {
                                         Button("Reveal in Finder") {
@@ -89,6 +102,9 @@ struct FolderRowView: View {
     let folder: FolderItem
     let largestSize: Int64
     let accentColor: Color
+    let onDelete: () -> Void
+    @State private var isHovering = false
+    @State private var showDeleteConfirm = false
 
     private var fraction: Double {
         largestSize > 0 ? Double(folder.size) / Double(largestSize) : 0
@@ -124,9 +140,26 @@ struct FolderRowView: View {
                 .font(.system(size: 13, design: .monospaced))
                 .foregroundStyle(.primary)
                 .frame(minWidth: 80, alignment: .trailing)
+
+            RevealFolderButton(isVisible: isHovering) {
+                NSWorkspace.shared.open(folder.url)
+            }
+
+            TrashButton(isVisible: isHovering) {
+                showDeleteConfirm = true
+            }
         }
         .padding(.vertical, 4)
         .contentShape(Rectangle())
+        .onHover { isHovering = $0 }
+        .confirmationDialog(
+            "Move “\(folder.name)” to the Trash?",
+            isPresented: $showDeleteConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("Move to Trash", role: .destructive, action: onDelete)
+            Button("Cancel", role: .cancel) {}
+        }
     }
 }
 
@@ -134,6 +167,9 @@ struct FileRowView: View {
     let item: FileItem
     let largestSize: Int64
     let accentColor: Color
+    let onDelete: () -> Void
+    @State private var isHovering = false
+    @State private var showDeleteConfirm = false
 
     private var fraction: Double {
         largestSize > 0 ? Double(item.size) / Double(largestSize) : 0
@@ -176,8 +212,62 @@ struct FileRowView: View {
                 .font(.system(size: 13, design: .monospaced))
                 .foregroundStyle(.primary)
                 .frame(minWidth: 80, alignment: .trailing)
+
+            RevealFolderButton(isVisible: isHovering) {
+                NSWorkspace.shared.activateFileViewerSelecting([item.url])
+            }
+
+            TrashButton(isVisible: isHovering) {
+                showDeleteConfirm = true
+            }
         }
         .padding(.vertical, 4)
         .contentShape(Rectangle())
+        .onHover { isHovering = $0 }
+        .confirmationDialog(
+            "Move “\(item.name)” to the Trash?",
+            isPresented: $showDeleteConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("Move to Trash", role: .destructive, action: onDelete)
+            Button("Cancel", role: .cancel) {}
+        }
+    }
+}
+
+private struct HoverIconButton: View {
+    let systemName: String
+    let helpText: String
+    let isVisible: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.system(size: 12))
+                .frame(width: 22, height: 22)
+        }
+        .buttonStyle(.borderless)
+        .help(helpText)
+        .opacity(isVisible ? 1 : 0)
+        .allowsHitTesting(isVisible)
+    }
+}
+
+private struct RevealFolderButton: View {
+    let isVisible: Bool
+    let action: () -> Void
+
+    var body: some View {
+        HoverIconButton(systemName: "folder", helpText: "Open Enclosing Folder", isVisible: isVisible, action: action)
+    }
+}
+
+private struct TrashButton: View {
+    let isVisible: Bool
+    let action: () -> Void
+
+    var body: some View {
+        HoverIconButton(systemName: "trash", helpText: "Move to Trash", isVisible: isVisible, action: action)
     }
 }

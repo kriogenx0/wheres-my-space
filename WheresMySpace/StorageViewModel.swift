@@ -104,11 +104,35 @@ class StorageViewModel: ObservableObject {
         }
     }
 
+    func moveFolderToTrash(folder: FolderItem, target: ScanTarget) {
+        guard var targetFolders = folders[target],
+              let index = targetFolders.firstIndex(where: { $0.id == folder.id }) else { return }
+        targetFolders.remove(at: index)
+        folders[target] = targetFolders
+        totalSizes[target] = max(0, (totalSizes[target] ?? 0) - folder.size)
+        Task.detached {
+            try? FileManager.default.trashItem(at: folder.url, resultingItemURL: nil)
+        }
+    }
+
     private func loadDiskInfo() {
         guard let attrs = try? FileManager.default.attributesOfFileSystem(forPath: "/"),
               let total = attrs[.systemSize] as? Int64 else { return }
         totalDiskSpace = total
     }
+}
+
+private let scanItemTimeout: TimeInterval = 30
+
+private func withTimeout<T>(seconds: TimeInterval, work: @escaping () -> T?) -> T? {
+    let semaphore = DispatchSemaphore(value: 0)
+    var result: T?
+    DispatchQueue.global(qos: .userInitiated).async {
+        result = work()
+        semaphore.signal()
+    }
+    guard semaphore.wait(timeout: .now() + seconds) == .success else { return nil }
+    return result
 }
 
 private func scanDirectoryStream(_ target: ScanTarget) -> AsyncStream<ScanBatch> {
@@ -127,7 +151,7 @@ private func scanDirectoryStream(_ target: ScanTarget) -> AsyncStream<ScanBatch>
             var lastYield = Date()
             let rootDepth = url.pathComponents.count
 
-            let keys: [URLResourceKey] = [.fileSizeKey, .isRegularFileKey]
+            let keys: [URLResourceKey] = [.totalFileAllocatedSizeKey, .fileAllocatedSizeKey, .fileSizeKey, .isRegularFileKey]
             guard let enumerator = FileManager.default.enumerator(
                 at: url,
                 includingPropertiesForKeys: keys,
@@ -140,9 +164,9 @@ private func scanDirectoryStream(_ target: ScanTarget) -> AsyncStream<ScanBatch>
             }
 
             while let fileURL = enumerator.nextObject() as? URL {
-                guard let vals = try? fileURL.resourceValues(forKeys: Set(keys)),
+                guard let vals = withTimeout(seconds: scanItemTimeout, work: { try? fileURL.resourceValues(forKeys: Set(keys)) }),
                       vals.isRegularFile == true,
-                      let size = vals.fileSize else { continue }
+                      let size = vals.totalFileAllocatedSize ?? vals.fileAllocatedSize ?? vals.fileSize else { continue }
 
                 let byteSize = Int64(size)
                 total += byteSize
