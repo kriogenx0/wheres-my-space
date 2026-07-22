@@ -109,21 +109,19 @@ struct FolderRowView: View {
     private var fraction: Double {
         largestSize > 0 ? Double(folder.size) / Double(largestSize) : 0
     }
+    private let barWidth: CGFloat = 80
 
     var body: some View {
         HStack(alignment: .center, spacing: 10) {
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(accentColor.opacity(0.15))
-                        .frame(height: 4)
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(accentColor)
-                        .frame(width: geo.size.width * fraction, height: 4)
-                }
-                .frame(height: 4)
+            ZStack(alignment: .leading) {
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(accentColor.opacity(0.15))
+                    .frame(width: barWidth, height: 4)
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(accentColor)
+                    .frame(width: barWidth * fraction, height: 4)
             }
-            .frame(width: 80, height: 4)
+            .frame(width: barWidth, height: 4)
 
             Image(systemName: "folder.fill")
                 .foregroundStyle(accentColor)
@@ -174,21 +172,19 @@ struct FileRowView: View {
     private var fraction: Double {
         largestSize > 0 ? Double(item.size) / Double(largestSize) : 0
     }
+    private let barWidth: CGFloat = 80
 
     var body: some View {
         HStack(alignment: .center, spacing: 10) {
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(accentColor.opacity(0.15))
-                        .frame(height: 4)
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(accentColor)
-                        .frame(width: geo.size.width * fraction, height: 4)
-                }
-                .frame(height: 4)
+            ZStack(alignment: .leading) {
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(accentColor.opacity(0.15))
+                    .frame(width: barWidth, height: 4)
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(accentColor)
+                    .frame(width: barWidth * fraction, height: 4)
             }
-            .frame(width: 80, height: 4)
+            .frame(width: barWidth, height: 4)
 
             Image(systemName: "doc.fill")
                 .foregroundStyle(.secondary)
