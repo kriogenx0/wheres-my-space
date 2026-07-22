@@ -19,6 +19,13 @@ final class WheresMySpaceTests: XCTestCase {
         XCTAssertEqual(ScanTarget.systemLibrary.url.path, "/Library")
     }
 
+    func testHomeTargetExcludesLibrary() {
+        let home = FileManager.default.homeDirectoryForCurrentUser
+        XCTAssertEqual(ScanTarget.home.url.path, home.path)
+        XCTAssertEqual(ScanTarget.home.excludedURLs.map(\.path), [home.appendingPathComponent("Library").path])
+        XCTAssertTrue(ScanTarget.applications.excludedURLs.isEmpty)
+    }
+
     @MainActor
     func testMoveToTrashUpdatesState() {
         let vm = StorageViewModel()

@@ -5,6 +5,7 @@ enum ScanTarget: String, CaseIterable, Identifiable {
     case userLibrary = "~/Library"
     case systemLibrary = "/Library"
     case applications = "/Applications"
+    case home = "~"
 
     var id: String { rawValue }
 
@@ -16,6 +17,8 @@ enum ScanTarget: String, CaseIterable, Identifiable {
             return URL(fileURLWithPath: "/Library")
         case .applications:
             return URL(fileURLWithPath: "/Applications")
+        case .home:
+            return FileManager.default.homeDirectoryForCurrentUser
         }
     }
 
@@ -24,10 +27,25 @@ enum ScanTarget: String, CaseIterable, Identifiable {
         case .userLibrary: return .blue
         case .systemLibrary: return .green
         case .applications: return .orange
+        case .home: return .purple
         }
     }
 
-    var label: String { rawValue }
+    var excludedURLs: [URL] {
+        switch self {
+        case .home:
+            return [FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library")]
+        default:
+            return []
+        }
+    }
+
+    var label: String {
+        switch self {
+        case .home: return "Home"
+        default: return rawValue
+        }
+    }
 }
 
 struct ScanBatch: Sendable {
@@ -163,7 +181,13 @@ private func scanDirectoryStream(_ target: ScanTarget) -> AsyncStream<ScanBatch>
                 return
             }
 
+            let excludedPaths = Set(target.excludedURLs.map { $0.path })
+
             while let fileURL = enumerator.nextObject() as? URL {
+                if excludedPaths.contains(fileURL.path) {
+                    enumerator.skipDescendants()
+                    continue
+                }
                 guard let vals = withTimeout(seconds: scanItemTimeout, work: { try? fileURL.resourceValues(forKeys: Set(keys)) }),
                       vals.isRegularFile == true,
                       let size = vals.totalFileAllocatedSize ?? vals.fileAllocatedSize ?? vals.fileSize else { continue }
